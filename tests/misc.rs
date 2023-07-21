@@ -159,6 +159,12 @@ mod replacer_closure_lifetimes {
             .replace_all("x", coerce(|caps| Cow::Borrowed(&caps[0])));
         assert_eq!(s, "x");
     }
+    // The following test is commented out yet because currently `Replacer` is
+    // not implemented for closures whose return type depends on the lifetime
+    // parameter `'b` of the `Captures<'b>` type.
+    // TODO: Fix this when/if the hidden `ReplacerClosure` helper trait gets
+    // two lifetime parameters.
+    /*
     #[test]
     fn parameter_lifetime() {
         fn coerce<F: for<'b> FnMut(&Captures<'b>) -> Cow<'b, str>>(f: F) -> F {
@@ -170,20 +176,5 @@ mod replacer_closure_lifetimes {
         );
         assert_eq!(s, "x");
     }
-    // Additionally demand that its sufficient if the closure accepts a single
-    // lifetime `'u` which is used both for the reference to and the lifetime
-    // argument of the `Captures` argument. Note that `Captures<'u>` is
-    // covariant over `'u`.
-    #[test]
-    fn unified_lifetime() {
-        fn coerce<F: for<'u> FnMut(&'u Captures<'u>) -> Cow<'u, str>>(
-            f: F,
-        ) -> F {
-            f
-        }
-        let s = Regex::new("x")
-            .unwrap()
-            .replace_all("x", coerce(|caps| Cow::Borrowed(&caps[0])));
-        assert_eq!(s, "x");
-    }
+    */
 }

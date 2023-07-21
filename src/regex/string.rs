@@ -2376,16 +2376,21 @@ mod replacer_closure {
     use super::*;
     /// If a closure implements this for all `'a`, then it also implements
     /// [`Replacer`].
+    // TODO: Use two lifetimes `'a` and `'b`: one for the reference and one for
+    // the lifetime argument `'b` of `Captures<'b>`. This requires a syntax
+    // like `for<'a, 'b: 'a> ReplacerClosure<'a, 'b> when using this trait,
+    // which currently doesn't exist.
+    // See also: https://github.com/rust-lang/rfcs/pull/3261
     pub trait ReplacerClosure<'a>
     where
-        Self: FnMut(&'a Captures<'a>) -> <Self as ReplacerClosure<'a>>::Output,
+        Self: FnMut(&'a Captures<'_>) -> <Self as ReplacerClosure<'a>>::Output,
     {
         /// Return type of the closure (may depend on lifetime `'a`).
         type Output: AsRef<str>;
     }
     impl<'a, F: ?Sized, O> ReplacerClosure<'a> for F
     where
-        F: FnMut(&'a Captures<'a>) -> O,
+        F: FnMut(&'a Captures<'_>) -> O,
         O: AsRef<str>,
     {
         type Output = O;
@@ -2430,7 +2435,8 @@ use replacer_closure::*;
 ///
 /// Closures that take an argument of type  `&'a Captures<'b>` for any `'a` and
 /// `'b: 'a` and which return a type `T: AsRef<str>` (that may depend on `'a`
-/// or `'b`) implement the `Replacer` trait through a [blanket implementation].
+/// but not on `'b`) implement the `Replacer` trait through a [blanket
+/// implementation].
 ///
 /// [blanket implementation]: Self#impl-Replacer-for-F
 ///
@@ -2580,7 +2586,7 @@ impl<'a> Replacer for &'a Cow<'a, str> {
 /// ```ignore
 /// impl<F, T> Replacer for F
 /// where
-///     F: for<'a> FnMut(&'a Captures<'a>) -> T,
+///     F: for<'a, 'b> FnMut(&'a Captures<'b>) -> T,
 ///     T: AsRef<str>, // `T` may also depend on `'a`, which cannot be expressed easily
 /// {
 ///     /* … */
